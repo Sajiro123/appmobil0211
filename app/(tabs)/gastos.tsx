@@ -446,8 +446,7 @@ const styles = StyleSheet.create({
   },
   categoriesGrid: {
     flexDirection: 'row',
-    gap: 5,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   categoryCard: {
     borderRadius: 6,
