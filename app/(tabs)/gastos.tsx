@@ -249,7 +249,7 @@ export default function GastosScreen() {
               {gastos.length} registro{gastos.length !== 1 ? 's' : ''}
             </Text>
           </View>
-          <TrendingDown size={32} color="#E63946" />
+          <TrendingDown size={20} color="#E63946" />
         </View>
 
         {/* Card de Total */}
