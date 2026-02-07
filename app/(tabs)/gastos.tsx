@@ -425,18 +425,18 @@ const styles = StyleSheet.create({
   // Categorías Section
   categoriesSection: {
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   categoriesTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 12,
+    marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   categoriesGrid: {
     flexDirection: 'row',
