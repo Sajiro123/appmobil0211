@@ -4,18 +4,18 @@
  */
 
 const COLOR_PALETTE = [
-  '#FF6B6B', // Rojo
-  '#4ECDC4', // Turquesa
-  '#45B7D1', // Azul cielo
-  '#FFA07A', // Salmón
-  '#98D8C8', // Menta
-  '#F7DC6F', // Amarillo dorado
-  '#BB8FCE', // Púrpura
-  '#85C1E2', // Azul claro
-  '#F8B88B', // Naranja
-  '#81C995', // Verde
-  '#E59866', // Naranja oscuro
-  '#5DADE2', // Azul profundo
+  '#E63946', // Rojo oscuro
+  '#1B7A78', // Turquesa oscuro
+  '#0096C7', // Azul oscuro
+  '#D62828', // Rojo profundo
+  '#2A9D8F', // Verde azulado oscuro
+  '#F4A261', // Naranja profundo
+  '#6A4C93', // Púrpura oscuro
+  '#004E89', // Azul marino
+  '#E76F51', // Naranja oscuro
+  '#2D6A4F', // Verde oscuro
+  '#C1121F', // Rojo intenso
+  '#003554', // Azul muy oscuro
 ];
 
 /**
