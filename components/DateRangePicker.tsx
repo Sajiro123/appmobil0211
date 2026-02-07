@@ -46,7 +46,8 @@ export function DateRangePicker({
     const formatPeru = (d: Date) =>
       d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
-    for (let i = 0; i < 30; i++) {
+    // Generar opciones para 365 días atrás (un año completo)
+    for (let i = 0; i < 365; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
 
