@@ -322,8 +322,8 @@ export default function ReporteScreen() {
           <View style={styles.expenseDetails}>
             <Text style={styles.sectionTitle}>Gastos por Categoría</Text>
 
-            {gastosPorCategoria.map((categoria, index) => (
-              <View key={index} style={styles.categoryRow}>
+            {gastosPorCategoria.map((categoria) => (
+              <View key={categoria.categoria} style={styles.categoryRow}>
                 <View style={styles.categoryInfo}>
                   <View style={styles.categoryIndicator} />
                   <View>
