@@ -83,21 +83,13 @@ export function DateRangePicker({
   };
 
   const handleEndDateSelect = (date: string) => {
-    const formatPeru = (d: Date) =>
-      d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
-
-    const isValid = validateDateRange(startDate, date);
-
-    if (isValid) {
-      onDateChange(startDate, date);
-      setShowEndPicker(false);
+    // Si la fecha seleccionada es anterior a la fecha inicial, intercambiar
+    if (date < startDate) {
+      onDateChange(date, date);
     } else {
-      const newStartDate = new Date(date);
-      newStartDate.setDate(newStartDate.getDate() - 8);
-
-      onDateChange(formatPeru(newStartDate), date);
-      setShowEndPicker(false);
+      onDateChange(startDate, date);
     }
+    setShowEndPicker(false);
   };
 
   const dateOptions = generateDateOptions();
