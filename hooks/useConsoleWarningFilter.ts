@@ -15,12 +15,13 @@ export function useConsoleWarningFilter() {
     // Filtrar console.error
     console.error = function (...args: any[]) {
       const message = args[0];
-      
+
       // Suprimir advertencia de transform-origin de react-native-calendars
       if (
         typeof message === 'string' &&
         message.includes('Invalid DOM property') &&
-        (message.includes('transform-origin') || message.includes('transformOrigin'))
+        (message.includes('transform-origin') ||
+          message.includes('transformOrigin'))
       ) {
         return;
       }
@@ -29,9 +30,9 @@ export function useConsoleWarningFilter() {
       if (
         typeof message === 'string' &&
         message.includes('Invalid DOM property') &&
-        (message.includes('aria-') || 
-         message.includes('data-') ||
-         message.includes('role'))
+        (message.includes('aria-') ||
+          message.includes('data-') ||
+          message.includes('role'))
       ) {
         return;
       }
@@ -47,7 +48,7 @@ export function useConsoleWarningFilter() {
       if (
         typeof message === 'string' &&
         (message.includes('Non-serializable values') ||
-         message.includes('ViewPropTypes will be removed'))
+          message.includes('ViewPropTypes will be removed'))
       ) {
         return;
       }

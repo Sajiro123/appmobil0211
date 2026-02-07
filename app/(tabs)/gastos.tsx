@@ -30,9 +30,8 @@ export default function GastosScreen() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<CategoriaGasto | null>(
-    null
-  );
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoriaGasto | null>(null);
 
   const getDefaultDates = () => {
     const today = new Date();
@@ -129,8 +128,7 @@ export default function GastosScreen() {
   // Filtrar gastos por categoría
   const filteredGastos = selectedCategory
     ? gastos.filter(
-        (g) =>
-          g.idcategoriagastos === selectedCategory.idcategoriagastos
+        (g) => g.idcategoriagastos === selectedCategory.idcategoriagastos,
       )
     : gastos;
 
@@ -181,7 +179,7 @@ export default function GastosScreen() {
 
   const renderGasto = (item: any) => {
     const categoryColor = getCategoryColor(
-      item.categoriagastos?.descripcion || ''
+      item.categoriagastos?.descripcion || '',
     );
 
     return (
@@ -217,7 +215,13 @@ export default function GastosScreen() {
     <View>
       {renderDateHeader(item.fecha)}
       {item.gastos.map((gasto, index) => (
-        <View key={gasto.idgastos ? gasto.idgastos.toString() : `${item.fecha}-${index}`}>
+        <View
+          key={
+            gasto.idgastos
+              ? gasto.idgastos.toString()
+              : `${item.fecha}-${index}`
+          }
+        >
           {renderGasto(gasto)}
         </View>
       ))}
@@ -256,7 +260,9 @@ export default function GastosScreen() {
           <Text style={styles.totalCardLabel}>Gasto Total</Text>
           <Text style={styles.totalCardAmount}>{formatMoney(total)}</Text>
           <Text style={styles.totalCardPeriod}>
-            {startDate === endDate ? `${formatDate(startDate)}` : `${formatDate(startDate)} - ${formatDate(endDate)}`}
+            {startDate === endDate
+              ? `${formatDate(startDate)}`
+              : `${formatDate(startDate)} - ${formatDate(endDate)}`}
           </Text>
         </View>
       </View>
@@ -280,9 +286,7 @@ export default function GastosScreen() {
       {Object.keys(byCategory).length > 0 && (
         <View style={styles.categoriesSection}>
           <Text style={styles.categoriesTitle}>Por Categoría</Text>
-          <View
-            style={styles.categoriesGrid}
-          >
+          <View style={styles.categoriesGrid}>
             {Object.entries(byCategory)
               .sort(([, a], [, b]) => (b as number) - (a as number))
               .map(([categoria, monto]) => {
@@ -296,7 +300,7 @@ export default function GastosScreen() {
                     style={[styles.categoryCard, { backgroundColor: bgColor }]}
                     onPress={() => {
                       const cat = gastos.find(
-                        (g) => g.categoriagastos?.descripcion === categoria
+                        (g) => g.categoriagastos?.descripcion === categoria,
                       )?.categoriagastos;
                       if (cat) {
                         setSelectedCategory(cat);
@@ -312,7 +316,9 @@ export default function GastosScreen() {
                     <Text style={styles.categoryCardName} numberOfLines={1}>
                       {categoria}
                     </Text>
-                    <Text style={[styles.categoryCardAmount, { color: lightColor }]}>
+                    <Text
+                      style={[styles.categoryCardAmount, { color: lightColor }]}
+                    >
                       {formatMoney(monto as number)}
                     </Text>
                   </TouchableOpacity>

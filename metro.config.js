@@ -8,9 +8,11 @@ config.server = {
   enhanceMiddleware: (middleware) => {
     return (req, res, next) => {
       // Ignorar solicitudes a archivos anónimos
-      if (req.url.includes('<anonymous>') ||
-          req.url.includes('undefined') ||
-          req.url.includes('null')) {
+      if (
+        req.url.includes('<anonymous>') ||
+        req.url.includes('undefined') ||
+        req.url.includes('null')
+      ) {
         console.log('✅ Ignorando solicitud de archivo anónimo');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end('{}');

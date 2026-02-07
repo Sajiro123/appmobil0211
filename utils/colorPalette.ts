@@ -56,7 +56,10 @@ export function getContrastColor(hexColor: string): string {
 /**
  * Obtiene un color más claro para usar como fondo
  */
-export function getLighterColor(hexColor: string, percent: number = 80): string {
+export function getLighterColor(
+  hexColor: string,
+  percent: number = 80,
+): string {
   const r = parseInt(hexColor.slice(1, 3), 16);
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
@@ -71,7 +74,10 @@ export function getLighterColor(hexColor: string, percent: number = 80): string 
 /**
  * Obtiene un color intermedio más claro (para textos en cards)
  */
-export function getLighterVariant(hexColor: string, percent: number = 50): string {
+export function getLighterVariant(
+  hexColor: string,
+  percent: number = 50,
+): string {
   const r = parseInt(hexColor.slice(1, 3), 16);
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
