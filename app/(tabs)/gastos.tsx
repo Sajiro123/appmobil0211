@@ -199,8 +199,8 @@ export default function GastosScreen() {
   const renderGastoGroup = ({ item }: { item: GastoAgrupado }) => (
     <View>
       {renderDateHeader(item.fecha)}
-      {item.gastos.map((gasto) => (
-        <View key={gasto.id}>
+      {item.gastos.map((gasto, index) => (
+        <View key={gasto.idgastos ? gasto.idgastos.toString() : `${item.fecha}-${index}`}>
           {renderGasto(gasto)}
         </View>
       ))}
