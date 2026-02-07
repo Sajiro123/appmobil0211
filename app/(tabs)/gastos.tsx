@@ -6,29 +6,43 @@ import {
   FlatList,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
+import { TrendingDown } from 'lucide-react-native';
 import { gastosService } from '@/services/gastosService';
-import { Gasto } from '@/types/database';
+import { Gasto, CategoriaGasto } from '@/types/database';
 import { DateRangePicker } from '@/components/DateRangePicker';
+import { GastosFilter } from '@/components/GastosFilter';
+import {
+  getCategoryColor,
+  getContrastColor,
+  getLighterColor,
+  getLighterVariant,
+} from '@/utils/colorPalette';
+
+interface GastoAgrupado {
+  fecha: string;
+  gastos: any[];
+  total: number;
+}
 
 export default function GastosScreen() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoriaGasto | null>(null);
 
   const getDefaultDates = () => {
     const today = new Date();
+    const treintaDiasAgo = new Date(today);
+    treintaDiasAgo.setDate(treintaDiasAgo.getDate() - 30);
 
-    // Restar 8 días a la fecha actual
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 8);
-
-    // Convertir a formato YYYY-MM-DD en la zona horaria de Lima
     const formatPeru = (date: Date) =>
       date.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
     return {
-      startDate: formatPeru(sevenDaysAgo),
+      startDate: formatPeru(treintaDiasAgo),
       endDate: formatPeru(today),
     };
   };
@@ -84,16 +98,25 @@ export default function GastosScreen() {
     setRefreshing(false);
   };
 
-const formatDate = (dateString: string) => {
-  const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day); // crea fecha en hora local
-  return date.toLocaleDateString('es-PE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
+  const formatDateForHeader = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-PE', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+  };
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
@@ -102,9 +125,36 @@ const formatDate = (dateString: string) => {
     }).format(amount);
   };
 
+  // Filtrar gastos por categoría
+  const filteredGastos = selectedCategory
+    ? gastos.filter(
+        (g) => g.idcategoriagastos === selectedCategory.idcategoriagastos,
+      )
+    : gastos;
+
+  // Agrupar gastos por fecha
+  const groupGastosByDate = (): GastoAgrupado[] => {
+    const grouped: { [key: string]: any[] } = {};
+
+    filteredGastos.forEach((gasto) => {
+      if (!grouped[gasto.fecha]) {
+        grouped[gasto.fecha] = [];
+      }
+      grouped[gasto.fecha].push(gasto);
+    });
+
+    return Object.keys(grouped)
+      .sort((a, b) => b.localeCompare(a))
+      .map((fecha) => ({
+        fecha,
+        gastos: grouped[fecha],
+        total: grouped[fecha].reduce((sum, g) => sum + g.monto, 0),
+      }));
+  };
+
   const calculateTotals = () => {
-    const total = gastos.reduce((sum, gasto) => sum + gasto.monto, 0);
-    const byCategory = gastos.reduce((acc: any, gasto) => {
+    const total = filteredGastos.reduce((sum, gasto) => sum + gasto.monto, 0);
+    const byCategory = filteredGastos.reduce((acc: any, gasto) => {
       const categoria = gasto.categoriagastos?.descripcion || 'Sin categoría';
       if (!acc[categoria]) {
         acc[categoria] = 0;
@@ -117,24 +167,67 @@ const formatDate = (dateString: string) => {
   };
 
   const { total, byCategory } = calculateTotals();
+  const gastosPorFecha = groupGastosByDate();
 
-  const renderGasto = ({ item }: { item: any }) => (
-    <View style={styles.gastoCard}>
-      <View style={styles.gastoRow}>
-        <View style={styles.gastoInfo}>
-          <Text style={styles.gastoDescripcion} numberOfLines={1}>
-            {item.descripcion}
-          </Text>
-          <Text style={styles.gastoFecha}>{formatDate(item.fecha)}</Text>
-        </View>
-        <View style={styles.gastoRight}>
-          <Text style={styles.gastoMonto}>{formatMoney(item.monto)}</Text>
-          {item.categoriagastos && (
-            <Text style={styles.gastoCategoria} numberOfLines={1}>
-              {item.categoriagastos.descripcion}
+  const renderDateHeader = (fecha: string) => (
+    <View style={styles.dateHeaderContainer}>
+      <View style={styles.dateHeaderLine} />
+      <Text style={styles.dateHeaderText}>{formatDateForHeader(fecha)}</Text>
+      <View style={styles.dateHeaderLine} />
+    </View>
+  );
+
+  const renderGasto = (item: any) => {
+    const categoryColor = getCategoryColor(
+      item.categoriagastos?.descripcion || '',
+    );
+
+    return (
+      <View style={styles.gastoCard}>
+        <View style={styles.gastoCardContent}>
+          <View style={styles.gastoLeftContent}>
+            <Text style={styles.gastoDescripcion} numberOfLines={1}>
+              {item.descripcion}
             </Text>
-          )}
+            {item.categoriagastos && (
+              <View style={styles.categoryBadgeContainer}>
+                <View
+                  style={[
+                    styles.categoryIndicator,
+                    { backgroundColor: categoryColor },
+                  ]}
+                />
+                <Text style={styles.categoryBadgeText} numberOfLines={1}>
+                  {item.categoriagastos.descripcion}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.gastoRightContent}>
+            <Text style={styles.gastoMonto}>{formatMoney(item.monto)}</Text>
+          </View>
         </View>
+      </View>
+    );
+  };
+
+  const renderGastoGroup = ({ item }: { item: GastoAgrupado }) => (
+    <View>
+      {renderDateHeader(item.fecha)}
+      {item.gastos.map((gasto, index) => (
+        <View
+          key={
+            gasto.idgastos
+              ? gasto.idgastos.toString()
+              : `${item.fecha}-${index}`
+          }
+        >
+          {renderGasto(gasto)}
+        </View>
+      ))}
+      <View style={styles.dateTotalCard}>
+        <Text style={styles.dateTotalLabel}>Subtotal</Text>
+        <Text style={styles.dateTotalAmount}>{formatMoney(item.total)}</Text>
       </View>
     </View>
   );
@@ -142,6 +235,7 @@ const formatDate = (dateString: string) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        <TrendingDown size={40} color="#ccc" />
         <Text style={styles.loadingText}>Cargando gastos...</Text>
       </View>
     );
@@ -149,55 +243,113 @@ const formatDate = (dateString: string) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mis Gastos</Text>
-        <Text style={styles.subtitle}>Total de gastos: {gastos.length}</Text>
+      {/* Header Mejorado */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.headerSubtitle}>Balance de Gastos</Text>
+            <Text style={styles.headerTitle}>
+              {gastos.length} registro{gastos.length !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <TrendingDown size={20} color="#E63946" />
+        </View>
+
+        {/* Card de Total */}
+        <View style={styles.totalCardBig}>
+          <Text style={styles.totalCardLabel}>Gasto Total</Text>
+          <Text style={styles.totalCardAmount}>{formatMoney(total)}</Text>
+          <Text style={styles.totalCardPeriod}>
+            {startDate === endDate
+              ? `${formatDate(startDate)}`
+              : `${formatDate(startDate)} - ${formatDate(endDate)}`}
+          </Text>
+        </View>
       </View>
 
+      {/* Filtros */}
       <DateRangePicker
         startDate={startDate}
         endDate={endDate}
         onDateChange={handleDateChange}
       />
 
-      <View style={styles.summaryContainer}>
-        <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Total General</Text>
-          <Text style={styles.totalAmount}>{formatMoney(total)}</Text>
-        </View>
+      <GastosFilter
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        minAmount={0}
+        maxAmount={0}
+        onAmountChange={() => {}}
+      />
 
-        {Object.keys(byCategory).length > 0 && (
-          <View style={styles.categoriesContainer}>
-            <Text style={styles.categoriesTitle}>Por Categoría</Text>
-            <View style={styles.categoriesGrid}>
-              {Object.entries(byCategory).map(([categoria, monto]) => (
-                <View key={categoria} style={styles.categoryItem}>
-                  <Text style={styles.categoryName} numberOfLines={1}>
-                    {categoria}
-                  </Text>
-                  <Text style={styles.categoryAmount}>
-                    {formatMoney(monto as number)}
-                  </Text>
-                </View>
-              ))}
-            </View>
+      {/* Categorías Cards */}
+      {Object.keys(byCategory).length > 0 && (
+        <View style={styles.categoriesSection}>
+          <Text style={styles.categoriesTitle}>Por Categoría</Text>
+          <View style={styles.categoriesGrid}>
+            {Object.entries(byCategory)
+              .sort(([, a], [, b]) => (b as number) - (a as number))
+              .map(([categoria, monto]) => {
+                const categoryColor = getCategoryColor(categoria);
+                const bgColor = getLighterColor(categoryColor, 92);
+                const lightColor = getLighterVariant(categoryColor, 60);
+
+                return (
+                  <TouchableOpacity
+                    key={categoria}
+                    style={[styles.categoryCard, { backgroundColor: bgColor }]}
+                    onPress={() => {
+                      const cat = gastos.find(
+                        (g) => g.categoriagastos?.descripcion === categoria,
+                      )?.categoriagastos;
+                      if (cat) {
+                        setSelectedCategory(cat);
+                      }
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.categoryCardIndicator,
+                        { backgroundColor: categoryColor },
+                      ]}
+                    />
+                    <Text style={styles.categoryCardName} numberOfLines={1}>
+                      {categoria}
+                    </Text>
+                    <Text
+                      style={[styles.categoryCardAmount, { color: lightColor }]}
+                    >
+                      {formatMoney(monto as number)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
+      {/* Lista de Gastos */}
       <FlatList
-        data={gastos}
-        renderItem={renderGasto}
-        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+        data={gastosPorFecha}
+        renderItem={renderGastoGroup}
+        keyExtractor={(item) => item.fecha}
         contentContainerStyle={styles.listContainer}
+        scrollEnabled={true}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No hay gastos registrados</Text>
+            <TrendingDown size={48} color="#ddd" />
+            <Text style={styles.emptyText}>
+              {selectedCategory
+                ? 'Sin gastos en esta categoría'
+                : 'No hay gastos registrados'}
+            </Text>
             <Text style={styles.emptySubtext}>
-              Ve a la pestaña "Nuevo Gasto" para agregar tu primer gasto
+              {selectedCategory
+                ? 'Intenta seleccionar otra categoría'
+                : 'Ve a la pestaña "Nuevo Gasto" para agregar tu primer gasto'}
             </Text>
           </View>
         }
@@ -209,113 +361,171 @@ const formatDate = (dateString: string) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f9f9f9',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: '#999',
+    marginTop: 12,
+    fontWeight: '500',
   },
-  header: {
+
+  // Header
+  headerContainer: {
     backgroundColor: '#fff',
-    padding: 20,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
-  title: {
-    fontSize: 24,
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 9,
+    color: '#999',
+    fontWeight: '500',
+    marginBottom: 0,
+  },
+  headerTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+
+  // Total Card Grande
+  totalCardBig: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 10,
+    padding: 9,
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
   },
-  listContainer: {
-    padding: 12,
+  totalCardLabel: {
+    fontSize: 9,
+    color: '#aaa',
+    fontWeight: '500',
   },
-  summaryContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  totalCard: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  totalLabel: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginBottom: 4,
-  },
-  totalAmount: {
-    fontSize: 28,
+  totalCardAmount: {
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#fff',
+    marginTop: 2,
+    letterSpacing: -0.5,
   },
-  categoriesContainer: {
-    marginTop: 8,
+  totalCardPeriod: {
+    fontSize: 8,
+    color: '#888',
+    marginTop: 3,
+  },
+
+  // Categorías Section
+  categoriesSection: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   categoriesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 5,
+    marginLeft: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 5,
+    paddingHorizontal: 4,
   },
-  categoryItem: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    padding: 10,
-    minWidth: '30%',
-    flex: 1,
-    maxWidth: '48%',
+  categoryCard: {
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 4,
+    marginHorizontal: 1,
+    width: '16.33%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  categoryName: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+  categoryCardIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 3,
   },
-  categoryAmount: {
-    fontSize: 16,
+  categoryCardName: {
+    fontSize: 8,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 1,
+  },
+  categoryCardAmount: {
+    fontSize: 9,
     fontWeight: 'bold',
-    color: '#333',
   },
+
+  // Lista
+  listContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+
+  // Date Header
+  dateHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    marginHorizontal: 4,
+  },
+  dateHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dateHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#666',
+    marginHorizontal: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+
+  // Gasto Card
   gastoCard: {
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    marginBottom: 5,
+    marginHorizontal: 2,
+    overflow: 'hidden',
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
   },
-  gastoRow: {
+  gastoCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
-  gastoInfo: {
+  gastoLeftContent: {
     flex: 1,
-    marginRight: 12,
   },
   gastoDescripcion: {
     fontSize: 14,
@@ -323,43 +533,71 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
   },
-  gastoFecha: {
-    fontSize: 12,
-    color: '#999',
+  categoryBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  gastoRight: {
+  categoryIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '500',
+  },
+  gastoRightContent: {
     alignItems: 'flex-end',
+    marginLeft: 12,
   },
   gastoMonto: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 4,
+    color: '#2D6A4F',
   },
-  gastoCategoria: {
-    fontSize: 10,
-    color: '#fff',
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+
+  // Date Total
+  dateTotalCard: {
+    backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 8,
+    marginHorizontal: 2,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
+  dateTotalLabel: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '600',
+  },
+  dateTotalAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+
+  // Empty State
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingVertical: 80,
   },
   emptyText: {
     fontSize: 18,
+    fontWeight: '600',
     color: '#666',
-    textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#999',
+    marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 40,
   },

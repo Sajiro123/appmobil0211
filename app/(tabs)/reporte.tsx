@@ -23,7 +23,7 @@ export default function ReporteScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split('T')[0]
+    new Date().toISOString().split('T')[0],
   );
 
   // Estados para ventas
@@ -50,14 +50,12 @@ export default function ReporteScreen() {
         if (isMounted) setLoading(true);
 
         // Cargar datos de ventas
-        const resumenVentas = await pedidosService.getResumenVentasByDate(
-          selectedDate
-        );
+        const resumenVentas =
+          await pedidosService.getResumenVentasByDate(selectedDate);
 
         // Cargar datos de gastos
-        const resumenGastos = await gastosService.getResumenGastosByDate(
-          selectedDate
-        );
+        const resumenGastos =
+          await gastosService.getResumenGastosByDate(selectedDate);
 
         if (isMounted) {
           // Actualizar ventas
@@ -124,14 +122,12 @@ export default function ReporteScreen() {
     setRefreshing(true);
     try {
       // Cargar datos de ventas
-      const resumenVentas = await pedidosService.getResumenVentasByDate(
-        selectedDate
-      );
+      const resumenVentas =
+        await pedidosService.getResumenVentasByDate(selectedDate);
 
       // Cargar datos de gastos
-      const resumenGastos = await gastosService.getResumenGastosByDate(
-        selectedDate
-      );
+      const resumenGastos =
+        await gastosService.getResumenGastosByDate(selectedDate);
 
       // Actualizar ventas
       setTotalVentas(resumenVentas.totalVentas);
@@ -322,8 +318,8 @@ export default function ReporteScreen() {
           <View style={styles.expenseDetails}>
             <Text style={styles.sectionTitle}>Gastos por Categoría</Text>
 
-            {gastosPorCategoria.map((categoria, index) => (
-              <View key={index} style={styles.categoryRow}>
+            {gastosPorCategoria.map((categoria) => (
+              <View key={categoria.categoria} style={styles.categoryRow}>
                 <View style={styles.categoryInfo}>
                   <View style={styles.categoryIndicator} />
                   <View>

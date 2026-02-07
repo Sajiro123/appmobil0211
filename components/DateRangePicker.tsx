@@ -46,7 +46,8 @@ export function DateRangePicker({
     const formatPeru = (d: Date) =>
       d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
-    for (let i = 0; i < 30; i++) {
+    // Generar opciones para 365 días atrás (un año completo)
+    for (let i = 0; i < 365; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
 
@@ -65,48 +66,30 @@ export function DateRangePicker({
     return options;
   };
 
+  // Sin límite de días - permite cualquier rango de fechas
   const validateDateRange = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 8;
+    // Validar que la fecha final sea igual o posterior a la inicial
+    return start <= end;
   };
 
   const handleStartDateSelect = (date: string) => {
-    const formatPeru = (d: Date) =>
-      d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
-
-    const isValid = validateDateRange(date, endDate);
-
-    if (isValid) {
-      onDateChange(date, endDate);
-      setShowStartPicker(false);
+    // Si la fecha seleccionada es posterior a la fecha final, intercambiar
+    if (date > endDate) {
+      onDateChange(date, date);
     } else {
-      const newEndDate = new Date(date);
-      newEndDate.setDate(newEndDate.getDate() + 8);
-
-      onDateChange(date, formatPeru(newEndDate));
-      setShowStartPicker(false);
+      onDateChange(date, endDate);
     }
+    setShowStartPicker(false);
   };
 
   const handleEndDateSelect = (date: string) => {
-    const formatPeru = (d: Date) =>
-      d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
-
-    const isValid = validateDateRange(startDate, date);
-
-    if (isValid) {
-      onDateChange(startDate, date);
-      setShowEndPicker(false);
+    // Si la fecha seleccionada es anterior a la fecha inicial, intercambiar
+    if (date < startDate) {
+      onDateChange(date, date);
     } else {
-      const newStartDate = new Date(date);
-      newStartDate.setDate(newStartDate.getDate() - 8);
-
-      onDateChange(formatPeru(newStartDate), date);
-      setShowEndPicker(false);
+      onDateChange(startDate, date);
     }
+    setShowEndPicker(false);
   };
 
   const dateOptions = generateDateOptions();
