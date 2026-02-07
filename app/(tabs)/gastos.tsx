@@ -440,6 +440,7 @@ const styles = StyleSheet.create({
   gastoCategoriaText: {
     fontSize: 9,
     fontWeight: '600',
+    color: '#ffffff',
   },
   dateTotal: {
     backgroundColor: '#f8f8f8',
