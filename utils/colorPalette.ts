@@ -67,3 +67,18 @@ export function getLighterColor(hexColor: string, percent: number = 80): string 
 
   return `rgb(${newR}, ${newG}, ${newB})`;
 }
+
+/**
+ * Obtiene un color intermedio más claro (para textos en cards)
+ */
+export function getLighterVariant(hexColor: string, percent: number = 50): string {
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+
+  const newR = Math.round(r + (255 - r) * ((100 - percent) / 100));
+  const newG = Math.round(g + (255 - g) * ((100 - percent) / 100));
+  const newB = Math.round(b + (255 - b) * ((100 - percent) / 100));
+
+  return `rgb(${newR}, ${newG}, ${newB})`;
+}
