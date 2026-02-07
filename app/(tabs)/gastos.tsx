@@ -397,28 +397,29 @@ const styles = StyleSheet.create({
 
   // Total Card Grande
   totalCardBig: {
-    backgroundColor: 'linear-gradient(135deg, #E63946 0%, #D62828 100%)',
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
   },
   totalCardLabel: {
-    fontSize: 13,
-    color: '#fff',
-    opacity: 0.9,
+    fontSize: 12,
+    color: '#aaa',
     fontWeight: '500',
   },
   totalCardAmount: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#fff',
-    marginTop: 6,
+    marginTop: 5,
+    letterSpacing: -0.5,
   },
   totalCardPeriod: {
-    fontSize: 12,
-    color: '#fff',
-    opacity: 0.8,
-    marginTop: 8,
+    fontSize: 11,
+    color: '#888',
+    marginTop: 6,
   },
 
   // Categorías Section
