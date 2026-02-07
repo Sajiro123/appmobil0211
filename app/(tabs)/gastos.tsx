@@ -464,14 +464,14 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   categoryCardName: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
     color: '#333',
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   categoryCardAmount: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
   },
 
