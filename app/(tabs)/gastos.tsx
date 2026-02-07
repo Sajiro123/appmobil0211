@@ -450,8 +450,9 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    marginHorizontal: 2,
     minWidth: 'auto',
     alignItems: 'center',
     justifyContent: 'center',
