@@ -549,11 +549,11 @@ const styles = StyleSheet.create({
   // Date Total
   dateTotalCard: {
     backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 12,
-    marginHorizontal: 4,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginBottom: 8,
+    marginHorizontal: 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
