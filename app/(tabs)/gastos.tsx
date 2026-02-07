@@ -498,19 +498,19 @@ const styles = StyleSheet.create({
   // Gasto Card
   gastoCard: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 8,
-    marginHorizontal: 4,
+    borderRadius: 8,
+    marginBottom: 5,
+    marginHorizontal: 2,
     overflow: 'hidden',
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
     borderLeftColor: '#4CAF50',
   },
   gastoCardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
   gastoLeftContent: {
     flex: 1,
