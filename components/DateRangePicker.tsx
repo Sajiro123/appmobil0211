@@ -66,12 +66,10 @@ export function DateRangePicker({
     return options;
   };
 
+  // Sin límite de días - permite cualquier rango de fechas
   const validateDateRange = (start: string, end: string) => {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 8;
+    // Validar que la fecha final sea igual o posterior a la inicial
+    return start <= end;
   };
 
   const handleStartDateSelect = (date: string) => {
