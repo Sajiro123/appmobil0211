@@ -17,6 +17,7 @@ import {
   getCategoryColor,
   getContrastColor,
   getLighterColor,
+  getLighterVariant,
 } from '@/utils/colorPalette';
 
 interface GastoAgrupado {
