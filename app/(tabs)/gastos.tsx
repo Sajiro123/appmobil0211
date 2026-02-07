@@ -478,8 +478,8 @@ const styles = StyleSheet.create({
   dateHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
-    marginHorizontal: 8,
+    marginVertical: 8,
+    marginHorizontal: 4,
   },
   dateHeaderLine: {
     flex: 1,
