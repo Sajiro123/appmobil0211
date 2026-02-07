@@ -10,6 +10,13 @@ import {
 import { gastosService } from '@/services/gastosService';
 import { Gasto } from '@/types/database';
 import { DateRangePicker } from '@/components/DateRangePicker';
+import { getCategoryColor, getContrastColor, getLighterColor } from '@/utils/colorPalette';
+
+interface GastoAgrupado {
+  fecha: string;
+  gastos: any[];
+  total: number;
+}
 
 export default function GastosScreen() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -19,16 +26,16 @@ export default function GastosScreen() {
   const getDefaultDates = () => {
     const today = new Date();
 
-    // Restar 8 días a la fecha actual
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 8);
+    // Restar 30 días a la fecha actual
+    const treintaDiasAgo = new Date(today);
+    treintaDiasAgo.setDate(treintaDiasAgo.getDate() - 30);
 
     // Convertir a formato YYYY-MM-DD en la zona horaria de Lima
     const formatPeru = (date: Date) =>
       date.toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 
     return {
-      startDate: formatPeru(sevenDaysAgo),
+      startDate: formatPeru(treintaDiasAgo),
       endDate: formatPeru(today),
     };
   };
@@ -84,22 +91,52 @@ export default function GastosScreen() {
     setRefreshing(false);
   };
 
-const formatDate = (dateString: string) => {
-  const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(year, month - 1, day); // crea fecha en hora local
-  return date.toLocaleDateString('es-PE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-};
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
+  const formatDateForHeader = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('es-PE', {
       style: 'currency',
       currency: 'PEN',
     }).format(amount);
+  };
+
+  // Agrupar gastos por fecha
+  const groupGastosByDate = (): GastoAgrupado[] => {
+    const grouped: { [key: string]: any[] } = {};
+
+    gastos.forEach((gasto) => {
+      if (!grouped[gasto.fecha]) {
+        grouped[gasto.fecha] = [];
+      }
+      grouped[gasto.fecha].push(gasto);
+    });
+
+    return Object.keys(grouped)
+      .sort((a, b) => b.localeCompare(a)) // Ordenar por fecha descendente (más recientes primero)
+      .map((fecha) => ({
+        fecha,
+        gastos: grouped[fecha],
+        total: grouped[fecha].reduce((sum, g) => sum + g.monto, 0),
+      }));
   };
 
   const calculateTotals = () => {
@@ -117,24 +154,66 @@ const formatDate = (dateString: string) => {
   };
 
   const { total, byCategory } = calculateTotals();
+  const gastosPorFecha = groupGastosByDate();
 
-  const renderGasto = ({ item }: { item: any }) => (
+  const renderDateHeader = (fecha: string) => (
+    <View style={styles.dateHeader}>
+      <Text style={styles.dateHeaderText}>{formatDateForHeader(fecha)}</Text>
+    </View>
+  );
+
+  const renderGasto = (item: any) => (
     <View style={styles.gastoCard}>
       <View style={styles.gastoRow}>
         <View style={styles.gastoInfo}>
           <Text style={styles.gastoDescripcion} numberOfLines={1}>
             {item.descripcion}
           </Text>
-          <Text style={styles.gastoFecha}>{formatDate(item.fecha)}</Text>
         </View>
         <View style={styles.gastoRight}>
           <Text style={styles.gastoMonto}>{formatMoney(item.monto)}</Text>
           {item.categoriagastos && (
-            <Text style={styles.gastoCategoria} numberOfLines={1}>
-              {item.categoriagastos.descripcion}
-            </Text>
+            <View
+              style={[
+                styles.gastoCategoria,
+                {
+                  backgroundColor: getCategoryColor(
+                    item.categoriagastos.descripcion
+                  ),
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.gastoCategoriaText,
+                  {
+                    color: getContrastColor(
+                      getCategoryColor(item.categoriagastos.descripcion)
+                    ),
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {item.categoriagastos.descripcion}
+              </Text>
+            </View>
           )}
         </View>
+      </View>
+    </View>
+  );
+
+  const renderGastoGroup = ({ item }: { item: GastoAgrupado }) => (
+    <View>
+      {renderDateHeader(item.fecha)}
+      {item.gastos.map((gasto) => (
+        <View key={gasto.id}>
+          {renderGasto(gasto)}
+        </View>
+      ))}
+      <View style={styles.dateTotal}>
+        <Text style={styles.dateTotalLabel}>Total del día</Text>
+        <Text style={styles.dateTotalAmount}>{formatMoney(item.total)}</Text>
       </View>
     </View>
   );
@@ -151,7 +230,7 @@ const formatDate = (dateString: string) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Mis Gastos</Text>
-        <Text style={styles.subtitle}>Total de gastos: {gastos.length}</Text>
+        <Text style={styles.subtitle}>Total de registros: {gastos.length}</Text>
       </View>
 
       <DateRangePicker
@@ -170,25 +249,42 @@ const formatDate = (dateString: string) => {
           <View style={styles.categoriesContainer}>
             <Text style={styles.categoriesTitle}>Por Categoría</Text>
             <View style={styles.categoriesGrid}>
-              {Object.entries(byCategory).map(([categoria, monto]) => (
-                <View key={categoria} style={styles.categoryItem}>
-                  <Text style={styles.categoryName} numberOfLines={1}>
-                    {categoria}
-                  </Text>
-                  <Text style={styles.categoryAmount}>
-                    {formatMoney(monto as number)}
-                  </Text>
-                </View>
-              ))}
+              {Object.entries(byCategory).map(([categoria, monto]) => {
+                const categoryColor = getCategoryColor(categoria);
+                const textColor = getContrastColor(categoryColor);
+                const bgColor = getLighterColor(categoryColor, 85);
+
+                return (
+                  <View
+                    key={categoria}
+                    style={[styles.categoryItem, { backgroundColor: bgColor }]}
+                  >
+                    <Text
+                      style={[styles.categoryName, { color: textColor }]}
+                      numberOfLines={1}
+                    >
+                      {categoria}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.categoryAmount,
+                        { color: getCategoryColor(categoria) },
+                      ]}
+                    >
+                      {formatMoney(monto as number)}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
       </View>
 
       <FlatList
-        data={gastos}
-        renderItem={renderGasto}
-        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+        data={gastosPorFecha}
+        renderItem={renderGastoGroup}
+        keyExtractor={(item) => item.fecha}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -277,7 +373,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryItem: {
-    backgroundColor: '#f8f8f8',
     borderRadius: 8,
     padding: 10,
     minWidth: '30%',
@@ -286,13 +381,26 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 12,
-    color: '#666',
+    fontWeight: '600',
     marginBottom: 4,
   },
   categoryAmount: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  dateHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginTop: 12,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  dateHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
+    textTransform: 'capitalize',
   },
   gastoCard: {
     backgroundColor: '#fff',
@@ -311,7 +419,7 @@ const styles = StyleSheet.create({
   gastoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   gastoInfo: {
     flex: 1,
@@ -321,29 +429,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
-  },
-  gastoFecha: {
-    fontSize: 12,
-    color: '#999',
   },
   gastoRight: {
     alignItems: 'flex-end',
+    gap: 4,
   },
   gastoMonto: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#4CAF50',
-    marginBottom: 4,
   },
   gastoCategoria: {
-    fontSize: 10,
-    color: '#fff',
-    backgroundColor: '#2196F3',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  gastoCategoriaText: {
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  dateTotal: {
+    backgroundColor: '#f8f8f8',
     borderRadius: 8,
-    overflow: 'hidden',
+    padding: 10,
+    marginBottom: 12,
+    marginTop: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dateTotalLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
+  },
+  dateTotalAmount: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
   },
   emptyContainer: {
     flex: 1,
