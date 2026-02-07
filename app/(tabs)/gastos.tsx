@@ -441,11 +441,11 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   categoryCard: {
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 8,
+    padding: 9,
     flex: 1,
     minWidth: '31%',
     alignItems: 'center',
