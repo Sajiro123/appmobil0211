@@ -444,6 +444,8 @@ const styles = StyleSheet.create({
   },
   categoriesGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
     paddingHorizontal: 4,
   },
   categoryCard: {
@@ -451,7 +453,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
     marginHorizontal: 2,
-    minWidth: 'auto',
+    width: '48%',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -464,7 +466,7 @@ const styles = StyleSheet.create({
   categoryCardName: {
     fontSize: 8,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 1,
   },
