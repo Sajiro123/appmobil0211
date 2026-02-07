@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { TrendingDown } from 'lucide-react-native';
 import { gastosService } from '@/services/gastosService';
