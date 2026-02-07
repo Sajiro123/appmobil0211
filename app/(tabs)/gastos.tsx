@@ -559,12 +559,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dateTotalLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
     fontWeight: '600',
   },
   dateTotalAmount: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#4CAF50',
   },
