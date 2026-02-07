@@ -281,10 +281,8 @@ export default function GastosScreen() {
       {Object.keys(byCategory).length > 0 && (
         <View style={styles.categoriesSection}>
           <Text style={styles.categoriesTitle}>Por Categoría</Text>
-          <ScrollView
+          <View
             style={styles.categoriesGrid}
-            horizontal
-            showsHorizontalScrollIndicator={false}
           >
             {Object.entries(byCategory)
               .sort(([, a], [, b]) => (b as number) - (a as number))
@@ -321,7 +319,7 @@ export default function GastosScreen() {
                   </TouchableOpacity>
                 );
               })}
-          </ScrollView>
+          </View>
         </View>
       )}
 
