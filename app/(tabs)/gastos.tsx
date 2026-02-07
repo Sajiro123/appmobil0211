@@ -286,6 +286,7 @@ export default function GastosScreen() {
               .map(([categoria, monto]) => {
                 const categoryColor = getCategoryColor(categoria);
                 const bgColor = getLighterColor(categoryColor, 92);
+                const lightColor = getLighterVariant(categoryColor, 60);
 
                 return (
                   <TouchableOpacity
@@ -309,7 +310,7 @@ export default function GastosScreen() {
                     <Text style={styles.categoryCardName} numberOfLines={2}>
                       {categoria}
                     </Text>
-                    <Text style={[styles.categoryCardAmount, { color: categoryColor }]}>
+                    <Text style={[styles.categoryCardAmount, { color: lightColor }]}>
                       {formatMoney(monto as number)}
                     </Text>
                   </TouchableOpacity>
