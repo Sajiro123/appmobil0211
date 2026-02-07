@@ -184,14 +184,7 @@ export default function GastosScreen() {
               ]}
             >
               <Text
-                style={[
-                  styles.gastoCategoriaText,
-                  {
-                    color: getContrastColor(
-                      getCategoryColor(item.categoriagastos.descripcion)
-                    ),
-                  },
-                ]}
+                style={styles.gastoCategoriaText}
                 numberOfLines={1}
               >
                 {item.categoriagastos.descripcion}
