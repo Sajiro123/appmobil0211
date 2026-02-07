@@ -281,7 +281,11 @@ export default function GastosScreen() {
       {Object.keys(byCategory).length > 0 && (
         <View style={styles.categoriesSection}>
           <Text style={styles.categoriesTitle}>Por Categoría</Text>
-          <View style={styles.categoriesGrid}>
+          <ScrollView
+            style={styles.categoriesGrid}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
             {Object.entries(byCategory)
               .sort(([, a], [, b]) => (b as number) - (a as number))
               .map(([categoria, monto]) => {
@@ -308,7 +312,7 @@ export default function GastosScreen() {
                         { backgroundColor: categoryColor },
                       ]}
                     />
-                    <Text style={styles.categoryCardName} numberOfLines={2}>
+                    <Text style={styles.categoryCardName} numberOfLines={1}>
                       {categoria}
                     </Text>
                     <Text style={[styles.categoryCardAmount, { color: lightColor }]}>
@@ -317,7 +321,7 @@ export default function GastosScreen() {
                   </TouchableOpacity>
                 );
               })}
-          </View>
+          </ScrollView>
         </View>
       )}
 
