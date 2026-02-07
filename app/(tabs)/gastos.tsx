@@ -516,15 +516,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gastoDescripcion: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   categoryBadgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   categoryIndicator: {
     width: 6,
