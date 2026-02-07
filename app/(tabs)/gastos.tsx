@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
 
   // Lista
   listContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
 
   // Date Header
