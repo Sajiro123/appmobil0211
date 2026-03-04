@@ -4,6 +4,7 @@ export interface Gasto {
   monto: number;
   notas?: string;
   idcategoriagastos: number;
+  categoriagastos?: CategoriaGasto;
   descripcion: string;
   app: string;
   id_created_at: number;
