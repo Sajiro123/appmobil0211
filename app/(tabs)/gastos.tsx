@@ -10,6 +10,8 @@ import {
   Platform,
   Modal,
   ScrollView,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import {
   TrendingDown,
@@ -25,6 +27,9 @@ import {
   MoreVertical,
   ChevronLeft,
   TrendingUp,
+  Pencil,
+  Check,
+  Trash2,
 } from 'lucide-react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { gastosService } from '@/services/gastosService';
@@ -115,6 +120,24 @@ export default function GastosScreen() {
     useState<CategoriaGasto | null>(null);
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [searchText, setSearchText] = useState('');
+
+  // Edit modal state
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingGasto, setEditingGasto] = useState<any>(null);
+  const [editDescripcion, setEditDescripcion] = useState('');
+  const [editMonto, setEditMonto] = useState('');
+  const [editFecha, setEditFecha] = useState('');
+  const [editCategoria, setEditCategoria] = useState<CategoriaGasto | null>(
+    null,
+  );
+  const [categorias, setCategorias] = useState<CategoriaGasto[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [showEditDateCalendar, setShowEditDateCalendar] = useState(false);
+
+  // Confirm delete modal state
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [gastoToDelete, setGastoToDelete] = useState<any>(null);
 
   const getDefaultDates = () => {
     const today = new Date();
@@ -170,6 +193,70 @@ export default function GastosScreen() {
     }
   };
 
+  const handleEditGasto = async (gasto: any) => {
+    setEditingGasto(gasto);
+    setEditDescripcion(gasto.descripcion);
+    setEditMonto(String(gasto.monto));
+    setEditFecha(gasto.fecha);
+    setEditCategoria(gasto.categoriagastos || null);
+    // Load categorias if not loaded yet
+    if (categorias.length === 0) {
+      try {
+        const cats = await gastosService.getCategorias();
+        setCategorias(cats);
+      } catch (e) {
+        console.error('Error loading categorias:', e);
+      }
+    }
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingGasto) return;
+    const montoNum = parseFloat(editMonto);
+    if (!editDescripcion.trim()) {
+      Alert.alert('Error', 'La descripción es requerida');
+      return;
+    }
+    if (isNaN(montoNum) || montoNum <= 0) {
+      Alert.alert('Error', 'Ingresa un monto válido');
+      return;
+    }
+    try {
+      setSaving(true);
+      await gastosService.updateGasto(editingGasto.idgastos, {
+        descripcion: editDescripcion.trim(),
+        monto: montoNum,
+        fecha: editFecha,
+        idcategoriagastos: editCategoria?.idcategoriagastos,
+      });
+      setEditModalVisible(false);
+      await loadGastos();
+      Alert.alert('Éxito', 'Gasto actualizado correctamente');
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo actualizar el gasto');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteGasto = (gasto: any) => {
+    setGastoToDelete(gasto);
+    setConfirmDeleteVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!gastoToDelete) return;
+    try {
+      setConfirmDeleteVisible(false);
+      await gastosService.deleteGasto(gastoToDelete.idgastos);
+      setGastoToDelete(null);
+      await loadGastos();
+    } catch (e) {
+      Alert.alert('Error', 'No se pudo eliminar el gasto');
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadGastos();
@@ -203,12 +290,18 @@ export default function GastosScreen() {
     })}`;
   };
 
-  // Filtrar gastos por categoría
-  const filteredGastos = selectedCategory
-    ? gastos.filter(
-        (g) => g.idcategoriagastos === selectedCategory.idcategoriagastos,
-      )
-    : gastos;
+  // Filtrar gastos por categoría y texto
+  const filteredGastos = gastos
+    .filter((g) =>
+      selectedCategory
+        ? g.idcategoriagastos === selectedCategory.idcategoriagastos
+        : true,
+    )
+    .filter((g) =>
+      searchText.trim()
+        ? g.descripcion.toLowerCase().includes(searchText.trim().toLowerCase())
+        : true,
+    );
 
   // Agrupar gastos por fecha
   const groupGastosByDate = (): GastoAgrupado[] => {
@@ -269,21 +362,9 @@ export default function GastosScreen() {
     setShowEndCalendar(false);
   };
 
-  // Render header with total card + date pickers + categories (as ListHeaderComponent)
+  // Render header with date pickers + categories (as ListHeaderComponent)
   const renderListHeader = () => (
     <View>
-      {/* Total Card - Orange gradient style */}
-      <View style={styles.totalCard}>
-        <Text style={styles.totalCardLabel}>Gasto Total</Text>
-        <Text style={styles.totalCardAmount}>{formatMoney(total)}</Text>
-        <View style={styles.totalCardBadge}>
-          <TrendingUp size={14} color="#fff" />
-          <Text style={styles.totalCardBadgeText}>
-            {gastos.length} registro{gastos.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-      </View>
-
       {/* Date Pickers */}
       <View style={styles.datePickerSection}>
         <View style={styles.datePickerRow}>
@@ -442,6 +523,22 @@ export default function GastosScreen() {
           )}
         </View>
         <Text style={styles.gastoMonto}>- {formatMoney(item.monto)}</Text>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={() => handleEditGasto(item)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Pencil size={16} color="#E8551E" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => handleDeleteGasto(item)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Trash2 size={16} color="#E53935" />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -481,6 +578,45 @@ export default function GastosScreen() {
         <MoreVertical size={22} color="#333" />
       </View>
 
+      {/* Total Card - fijo, encima del buscador */}
+      <View style={styles.totalCard}>
+        <View>
+          <Text style={styles.totalCardLabel}>Gasto Total</Text>
+          <Text style={styles.totalCardAmount}>{formatMoney(total)}</Text>
+        </View>
+        <View style={styles.totalCardBadge}>
+          <TrendingUp size={14} color="#fff" />
+          <Text style={styles.totalCardBadgeText}>
+            {gastos.length} registro{gastos.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
+      </View>
+
+      {/* Buscador - fuera del FlatList para mantener el foco */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchInputWrapper}>
+          <Tag size={16} color="#aaa" />
+          <TextInput
+            style={styles.searchInput}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Buscar por descripción..."
+            placeholderTextColor="#bbb"
+            autoCapitalize="none"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchText('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <X size={16} color="#aaa" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Main List */}
       <FlatList
         data={gastosPorFecha}
@@ -508,6 +644,45 @@ export default function GastosScreen() {
           </View>
         }
       />
+
+      {/* ===== CONFIRM DELETE MODAL ===== */}
+      <Modal
+        visible={confirmDeleteVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmDeleteVisible(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmBox}>
+            <View style={styles.confirmIconWrap}>
+              <Trash2 size={28} color="#E53935" />
+            </View>
+            <Text style={styles.confirmTitle}>Eliminar gasto</Text>
+            <Text style={styles.confirmMsg} numberOfLines={3}>
+              ¿Estás seguro de eliminar{''}
+              <Text style={{ fontWeight: '700' }}>
+                {gastoToDelete?.descripcion?.toUpperCase()}
+              </Text>
+              ?{''}Esta acción no se puede deshacer.
+            </Text>
+            <View style={styles.confirmBtnRow}>
+              <TouchableOpacity
+                style={styles.confirmCancelBtn}
+                onPress={() => setConfirmDeleteVisible(false)}
+              >
+                <Text style={styles.confirmCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmDeleteBtn}
+                onPress={confirmDelete}
+              >
+                <Trash2 size={15} color="#fff" />
+                <Text style={styles.confirmDeleteText}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Calendar Modal - Start Date */}
       <Modal
@@ -622,6 +797,204 @@ export default function GastosScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ===== EDIT GASTO MODAL ===== */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.editModalContent]}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editar Gasto</Text>
+              <TouchableOpacity
+                onPress={() => setEditModalVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.editScrollView}
+              contentContainerStyle={styles.editScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Descripcion */}
+              <View style={styles.editFieldGroup}>
+                <Text style={styles.editLabel}>DESCRIPCIÓN</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editDescripcion}
+                  onChangeText={setEditDescripcion}
+                  placeholder="Descripción del gasto"
+                  placeholderTextColor="#bbb"
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              {/* Monto */}
+              <View style={styles.editFieldGroup}>
+                <Text style={styles.editLabel}>MONTO (S/)</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editMonto}
+                  onChangeText={setEditMonto}
+                  placeholder="0.00"
+                  placeholderTextColor="#bbb"
+                  keyboardType="decimal-pad"
+                />
+              </View>
+
+              {/* Fecha */}
+              <View style={styles.editFieldGroup}>
+                <Text style={styles.editLabel}>FECHA</Text>
+                <TouchableOpacity
+                  style={[styles.editInput, styles.editDateButton]}
+                  onPress={() => setShowEditDateCalendar(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.editDateValue}>
+                    {editFecha
+                      ? formatDateDisplay(editFecha)
+                      : 'Seleccionar fecha'}
+                  </Text>
+                  <CalendarDays size={18} color="#888" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Categoría */}
+              <View style={styles.editFieldGroup}>
+                <Text style={styles.editLabel}>CATEGORÍA</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.editCategoryScroll}
+                >
+                  {categorias.map((cat) => {
+                    const visual = getCategoryVisual(cat.descripcion ?? '');
+                    const isSelected =
+                      editCategoria?.idcategoriagastos ===
+                      cat.idcategoriagastos;
+                    return (
+                      <TouchableOpacity
+                        key={cat.idcategoriagastos.toString()}
+                        style={[
+                          styles.editCategoryChip,
+                          isSelected && {
+                            borderColor: visual.color,
+                            backgroundColor: visual.bgColor,
+                          },
+                        ]}
+                        onPress={() => setEditCategoria(cat)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.editCategoryChipText,
+                            isSelected && {
+                              color: visual.color,
+                              fontWeight: '700',
+                            },
+                          ]}
+                        >
+                          {cat.descripcion}
+                        </Text>
+                        {isSelected && <Check size={13} color={visual.color} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </ScrollView>
+
+            {/* Footer buttons */}
+            <View style={styles.editModalFooter}>
+              <TouchableOpacity
+                style={styles.editCancelBtn}
+                onPress={() => setEditModalVisible(false)}
+                disabled={saving}
+              >
+                <Text style={styles.editCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editSaveBtn, saving && { opacity: 0.7 }]}
+                onPress={handleSaveEdit}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.editSaveText}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Calendar for edit date */}
+      <Modal
+        visible={showEditDateCalendar}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditDateCalendar(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar fecha</Text>
+              <TouchableOpacity
+                onPress={() => setShowEditDateCalendar(false)}
+                style={styles.modalCloseBtn}
+              >
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              current={editFecha}
+              onDayPress={(day: any) => {
+                setEditFecha(day.dateString);
+                setShowEditDateCalendar(false);
+              }}
+              markedDates={{
+                [editFecha]: {
+                  selected: true,
+                  selectedColor: '#E8551E',
+                  selectedTextColor: '#fff',
+                },
+              }}
+              theme={{
+                selectedDayBackgroundColor: '#E8551E',
+                selectedDayTextColor: '#ffffff',
+                todayTextColor: '#E8551E',
+                dayTextColor: '#2d4150',
+                textDisabledColor: '#d9e1e8',
+                arrowColor: '#E8551E',
+                monthTextColor: '#2d4150',
+                indicatorColor: '#E8551E',
+                textDayFontWeight: '500',
+                textMonthFontWeight: 'bold',
+                textDayHeaderFontWeight: '500',
+                textDayFontSize: 16,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 13,
+              }}
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setShowEditDateCalendar(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -662,41 +1035,42 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
 
-  // Total Card - Orange
+  // Total Card - Orange (compacto)
   totalCard: {
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 12,
     backgroundColor: '#E8551E',
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     shadowColor: '#E8551E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   totalCardLabel: {
-    fontSize: 13,
+    fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
     fontWeight: '500',
-    marginBottom: 4,
   },
   totalCardAmount: {
-    fontSize: 34,
+    fontSize: 22,
     fontWeight: '800',
     color: '#fff',
     letterSpacing: -0.5,
-    marginBottom: 10,
   },
   totalCardBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
-    gap: 6,
+    gap: 5,
   },
   totalCardBadgeText: {
     fontSize: 12,
@@ -902,6 +1276,22 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
     marginLeft: 8,
   },
+  editBtn: {
+    marginLeft: 10,
+    padding: 6,
+    backgroundColor: '#FFF3EE',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFD9C8',
+  },
+  deleteBtn: {
+    marginLeft: 6,
+    padding: 6,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+  },
 
   // Empty State
   emptyContainer: {
@@ -966,5 +1356,197 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
+  },
+
+  // Edit Modal
+  editModalContent: {
+    maxHeight: '90%',
+  },
+  editScrollView: {
+    flexGrow: 0,
+  },
+  editScrollContent: {
+    padding: 20,
+    gap: 18,
+  },
+  editFieldGroup: {
+    gap: 6,
+  },
+  editLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#888',
+    letterSpacing: 0.6,
+  },
+  editInput: {
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1a1a1a',
+  },
+  editDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  editDateValue: {
+    fontSize: 15,
+    color: '#1a1a1a',
+    fontWeight: '500',
+  },
+  editCategoryScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  editCategoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F7F8FA',
+    borderWidth: 1.5,
+    borderColor: '#EAECF0',
+  },
+  editCategoryChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#555',
+  },
+  editModalFooter: {
+    flexDirection: 'row',
+    padding: 16,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  editCancelBtn: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  editCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  editSaveBtn: {
+    flex: 2,
+    backgroundColor: '#E8551E',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editSaveText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+  },
+
+  // Search bar
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1a1a1a',
+    padding: 0,
+  },
+
+  // Confirm Delete Modal
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  confirmBox: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  confirmIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFEBEE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 10,
+  },
+  confirmMsg: {
+    fontSize: 14,
+    color: '#555',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  confirmBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  confirmCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#666',
+  },
+  confirmDeleteBtn: {
+    flex: 1,
+    backgroundColor: '#E53935',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  confirmDeleteText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

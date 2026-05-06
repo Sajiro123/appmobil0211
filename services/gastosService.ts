@@ -60,6 +60,8 @@ export const gastosService = {
       query = query.lte('fecha', fechaFin);
     }
 
+    query = query.is('deleted', null);
+
     const { data, error } = await query.order('fecha', { ascending: false });
 
     if (error) {
@@ -118,7 +120,7 @@ export const gastosService = {
 
         const categoria = gasto.categoriagastos?.descripcion || 'Sin categoría';
         const existingCategory = acc.gastosPorCategoria.find(
-          (cat) => cat.categoria === categoria
+          (cat: { categoria: any; }) => cat.categoria === categoria
         );
 
         if (existingCategory) {
@@ -146,6 +148,38 @@ export const gastosService = {
     );
 
     return resumen;
+  },
+
+  // Actualizar un gasto existente
+  async updateGasto(
+    idgastos: number,
+    fields: { descripcion?: string; monto?: number; fecha?: string; idcategoriagastos?: number }
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('gastos')
+      .update(fields)
+      .eq('idgastos', idgastos);
+
+    if (error) {
+      console.error('Error updating gasto:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar un gasto (soft delete)
+  async deleteGasto(idgastos: number): Promise<void> {
+    const { error } = await supabase
+      .from('gastos')
+      .update({
+        deleted: 1,
+        deleted_at: new Date().toISOString(),
+      })
+      .eq('idgastos', idgastos);
+
+    if (error) {
+      console.error('Error deleting gasto:', error);
+      throw error;
+    }
   },
 
   // Obtener gastos por fechas específicas
